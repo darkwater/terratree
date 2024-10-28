@@ -18,10 +18,7 @@ impl TDataTree {
         let mut milestones = tdata
             .milestones
             .iter()
-            .map(|m| TreeMilestone {
-                name: m.name.clone(),
-                items: vec![],
-            })
+            .map(|m| TreeMilestone { name: m.name.clone(), items: vec![] })
             .collect::<Vec<_>>();
 
         for item in &tdata.items {
