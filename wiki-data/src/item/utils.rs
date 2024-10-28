@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use super::enums::Rarity;
+use super::types::Rarity;
 
 pub fn parse_opt_leading_number<T: FromStr>(s: &Option<String>) -> Option<T> {
     s.as_ref().and_then(|s| parse_leading_number(s).ok())

@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{fs::File, path::PathBuf};
 
 use clap::Parser;
 use rand::{seq::SliceRandom as _, thread_rng};
@@ -11,9 +11,10 @@ use tracing_subscriber::{
     fmt::format::DefaultFields, layer::SubscriberExt as _, util::SubscriberInitExt as _, Layer,
 };
 
-use wiki_data::item::{item::Item, raw::RawItem};
+use wiki_data::item::{Item, RawItem};
 
 mod download;
+mod generate;
 
 #[derive(Parser)]
 struct Args {
@@ -23,8 +24,14 @@ struct Args {
 
 #[derive(clap::Subcommand)]
 enum Subcommand {
-    Parse {},
     Download {},
+    Parse {
+        #[clap(long)]
+        generate_rust: Option<PathBuf>,
+
+        #[clap(long)]
+        generate_msgpack: Option<PathBuf>,
+    },
 }
 
 #[async_std::main]
@@ -50,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
             let out = rmp_serde::to_vec(&items)?;
             std::fs::write("raw-items.bin", out)?;
         }
-        Subcommand::Parse {} => {
+        Subcommand::Parse { generate_rust, generate_msgpack } => {
             let reader = File::open("raw-items.bin")?;
             let len = reader.metadata()?.len();
             let pb = indicatif::ProgressBar::new(len);
@@ -60,12 +67,22 @@ async fn main() -> anyhow::Result<()> {
             pb.finish();
 
             let pb = indicatif::ProgressBar::new(raw_items.len() as u64);
-            let items = pb
+            let mut items = pb
                 .wrap_iter(raw_items.iter())
                 .filter_map(|raw_item| raw_item.parse())
                 .collect::<Vec<Item>>();
 
             pb.finish();
+
+            items.sort_by_key(|i| i.item_id);
+
+            if let Some(path) = generate_rust {
+                generate::rust(&items, path)?
+            }
+
+            if let Some(path) = generate_msgpack {
+                generate::msgpack(&items, path)?
+            }
 
             for item in items.choose_multiple(&mut thread_rng(), 10) {
                 tracing::info!("{:#?}", item);

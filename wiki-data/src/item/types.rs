@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use derive_more::derive::TryFrom;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum ItemType {
     Weapon,
     Tool,
@@ -21,7 +21,7 @@ impl FromStr for ItemType {
     }
 }
 
-#[derive(Debug, TryFrom, Serialize)]
+#[derive(Debug, TryFrom, Serialize, Deserialize)]
 #[try_from(repr)]
 #[repr(i32)]
 pub enum Rarity {
@@ -80,7 +80,7 @@ impl FromStr for Rarity {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum DamageType {
     Melee,
     Ranged,

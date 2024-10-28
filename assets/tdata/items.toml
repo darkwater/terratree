@@ -12,3 +12,8 @@ milestone = "Start"
 name = "Copper Shortsword"
 tags = ["weapon", "melee", "copper"]
 milestone = "Start"
+
+[[items]]
+name = "Amphibian Boots"
+tags = []
+milestone = "Start"

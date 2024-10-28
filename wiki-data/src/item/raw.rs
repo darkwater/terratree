@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use super::{enums::ItemType, item::Item};
+use super::{item::Item, types::ItemType};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RawItem {
@@ -82,6 +82,10 @@ impl RawItem {
 
     pub fn internalname(&self) -> &str {
         &self.internalname
+    }
+
+    pub fn imagefile(&self) -> Option<&str> {
+        self.imagefile.as_deref()
     }
 
     fn list<T: FromStr>(field: &Option<String>) -> Vec<T> {

@@ -22,6 +22,8 @@ impl TemplateApp {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
+        egui_extras::install_image_loaders(&cc.egui_ctx);
+
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
@@ -58,7 +60,11 @@ impl eframe::App for TemplateApp {
                 ui.heading(&milestone.name);
 
                 for item in &milestone.items {
-                    ui.label(&item.name);
+                    let res = ui.label(&item.wiki_data.name);
+
+                    if let Some(text) = item.wiki_data.tooltip.as_ref().map(|t| t.text.as_str()) {
+                        res.on_hover_text(text);
+                    }
                 }
             }
 
