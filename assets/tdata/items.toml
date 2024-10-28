@@ -1,0 +1,14 @@
+[[items]]
+name = "Copper Pickaxe"
+tags = ["tool", "pickaxe", "copper"]
+milestone = "Start"
+
+[[items]]
+name = "Copper Axe"
+tags = ["tool", "axe", "copper"]
+milestone = "Start"
+
+[[items]]
+name = "Copper Shortsword"
+tags = ["weapon", "melee", "copper"]
+milestone = "Start"
