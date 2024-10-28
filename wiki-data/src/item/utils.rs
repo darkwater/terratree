@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use super::Rarity;
+use super::enums::Rarity;
 
 pub fn parse_opt_leading_number<T: FromStr>(s: &Option<String>) -> Option<T> {
     s.as_ref().and_then(|s| parse_leading_number(s).ok())
@@ -13,12 +13,11 @@ pub fn parse_leading_number<T: FromStr>(s: &str) -> Result<T, T::Err> {
         .unwrap_or_else(|| T::from_str(s))
 }
 
-pub fn parse_rarity(s: &Option<String>) -> Rarity {
-    let rare = s.as_ref().expect("Rarity is required");
-    dbg!(rare)
-        .parse::<i32>()
+pub fn parse_rarity(s: &Option<String>) -> Option<Rarity> {
+    let rare = s.as_ref()?;
+    rare.parse::<Rarity>()
         .or_else(|_| {
-            parse_leading_number(
+            parse_leading_number::<Rarity>(
                 rare.split_once("Rarity color ")
                     .expect("Invalid rarity")
                     .1
@@ -27,9 +26,7 @@ pub fn parse_rarity(s: &Option<String>) -> Rarity {
                     .0,
             )
         })
-        .expect("Invalid rarity")
-        .try_into()
-        .unwrap()
+        .ok()
 }
 
 #[cfg(test)]

@@ -11,8 +11,9 @@ use tracing_subscriber::{
     fmt::format::DefaultFields, layer::SubscriberExt as _, util::SubscriberInitExt as _, Layer,
 };
 
+use wiki_data::item::{item::Item, raw::RawItem};
+
 mod download;
-mod item;
 
 #[derive(Parser)]
 struct Args {
@@ -55,14 +56,14 @@ async fn main() -> anyhow::Result<()> {
             let pb = indicatif::ProgressBar::new(len);
             let reader = pb.wrap_read(reader);
 
-            let items = rmp_serde::from_read::<_, Vec<item::RawItem>>(reader)?;
+            let raw_items = rmp_serde::from_read::<_, Vec<RawItem>>(reader)?;
             pb.finish();
 
-            let pb = indicatif::ProgressBar::new(items.len() as u64);
+            let pb = indicatif::ProgressBar::new(raw_items.len() as u64);
             let items = pb
-                .wrap_iter(items.into_iter())
+                .wrap_iter(raw_items.iter())
                 .filter_map(|raw_item| raw_item.parse())
-                .collect::<Vec<item::Item>>();
+                .collect::<Vec<Item>>();
 
             pb.finish();
 
@@ -70,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
                 tracing::info!("{:#?}", item);
             }
 
-            tracing::info!("parsed {} items", items.len());
+            tracing::info!("parsed {}/{} items", items.len(), raw_items.len());
         }
     }
 

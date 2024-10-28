@@ -5,7 +5,7 @@ use tracing::{info_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt as _;
 use url::Url;
 
-use crate::item::RawItem;
+use wiki_data::item::raw::RawItem;
 
 #[derive(Debug, Default, Deserialize)]
 pub struct CargoQuery<T> {
