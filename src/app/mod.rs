@@ -22,7 +22,7 @@ impl TemplateApp {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
-        egui_extras::install_image_loaders(&cc.egui_ctx);
+        // egui_extras::install_image_loaders(&cc.egui_ctx);
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.

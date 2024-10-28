@@ -9,6 +9,7 @@ pub use self::item::Item;
 //     include!("_items.rs")
 // }
 
+#[cfg(feature = "items")]
 lazy_static::lazy_static! {
-    pub static ref ITEMS: Vec<Item> = rmp_serde::from_slice(include_bytes!("items.bin")).unwrap();
+    pub static ref ITEMS: Vec<Item> = rmp_serde::from_slice(include_bytes!("../../items.bin")).unwrap();
 }
