@@ -1,11 +1,14 @@
+use std::collections::HashMap;
+
 use anyhow::Context;
 use indicatif::ProgressStyle;
+use itertools::Itertools as _;
 use serde::Deserialize;
 use tracing::{info_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt as _;
 use url::Url;
 
-use wiki_data::item::RawItem;
+use wiki_data::{image::WikiImageInfoPage, item::RawItem, ImageLocation};
 
 #[derive(Debug, Default, Deserialize)]
 pub struct CargoQuery<T> {
@@ -28,9 +31,9 @@ pub async fn count() -> anyhow::Result<usize> {
     let url = Url::parse_with_params(
         "https://terraria.wiki.gg/api.php",
         [
+            ("format", "json"),
             ("action", "cargoquery"),
             ("tables", "Items"),
-            ("format", "json"),
             ("limit", "max"),
             ("fields", "count(*)"),
         ],
@@ -61,9 +64,9 @@ pub async fn items(offset: usize) -> anyhow::Result<Vec<RawItem>> {
     let url = Url::parse_with_params(
         "https://terraria.wiki.gg/api.php",
         [
+            ("format", "json"),
             ("action", "cargoquery"),
             ("tables", "Items"),
-            ("format", "json"),
             ("limit", "max"),
             ("offset", &offset.to_string()),
             ("order_by", "name"),
@@ -106,4 +109,60 @@ pub async fn all_items() -> anyhow::Result<Vec<RawItem>> {
     }
 
     Ok(out)
+}
+
+#[tracing::instrument(fields(indicatif.pb_show))]
+pub async fn images(titles: Vec<String>) -> anyhow::Result<Vec<ImageLocation>> {
+    tracing::info!("fetching {} image infos", titles.len());
+
+    let url = Url::parse_with_params(
+        "https://terraria.wiki.gg/api.php",
+        [
+            ("format", "json"),
+            ("action", "query"),
+            ("titles", &titles.into_iter().map(|t| format!("File:{t}")).join("|")),
+            ("prop", "imageinfo"),
+            ("iiprop", "url|size"),
+        ],
+    )
+    .unwrap();
+
+    #[derive(Debug, Default, Deserialize)]
+    pub struct Query {
+        query: QueryInner,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    pub struct QueryInner {
+        pages: HashMap<String, WikiImageInfoPage>,
+    }
+
+    // dbg!(
+    //     surf::get(url)
+    //         .await
+    //         .map_err(|e| e.into_inner())?
+    //         .body_json::<serde_json::Value>()
+    //         .await
+    // );
+    // todo!();
+
+    Ok(surf::get(url)
+        .await
+        .map_err(|e| e.into_inner())?
+        .body_json::<Query>()
+        .await
+        .map_err(|e| e.into_inner())?
+        .query
+        .pages
+        .into_values()
+        .filter_map(|entry| {
+            let ii = entry.imageinfo.into_iter().next()?;
+            Some(ImageLocation {
+                name: entry.title.strip_prefix("File:").unwrap().to_owned(),
+                url: ii.url,
+                width: ii.width,
+                height: ii.height,
+            })
+        })
+        .collect::<Vec<_>>())
 }

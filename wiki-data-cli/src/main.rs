@@ -1,4 +1,8 @@
-use std::{fs::File, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    path::PathBuf,
+};
 
 use clap::Parser;
 use rand::{seq::SliceRandom as _, thread_rng};
@@ -11,7 +15,10 @@ use tracing_subscriber::{
     fmt::format::DefaultFields, layer::SubscriberExt as _, util::SubscriberInitExt as _, Layer,
 };
 
-use wiki_data::item::{Item, RawItem};
+use wiki_data::{
+    item::{Item, RawItem},
+    ImageLocation,
+};
 
 mod download;
 mod generate;
@@ -32,6 +39,7 @@ enum Subcommand {
         #[clap(long)]
         generate_msgpack: Option<PathBuf>,
     },
+    LocateImages {},
 }
 
 #[async_std::main]
@@ -54,22 +62,27 @@ async fn main() -> anyhow::Result<()> {
         Subcommand::Download {} => {
             let items = download::all_items().await?;
 
+            tracing::info!("downloaded {} items", items.len());
+
             let out = rmp_serde::to_vec(&items)?;
             std::fs::write("raw-items.bin", out)?;
         }
         Subcommand::Parse { generate_rust, generate_msgpack } => {
-            let reader = File::open("raw-items.bin")?;
-            let len = reader.metadata()?.len();
-            let pb = indicatif::ProgressBar::new(len);
-            let reader = pb.wrap_read(reader);
-
-            let raw_items = rmp_serde::from_read::<_, Vec<RawItem>>(reader)?;
-            pb.finish();
+            let raw_items = parse_raw_items()?;
+            let image_locations = parse_image_locations()?
+                .into_iter()
+                .map(|il| (il.name.clone(), il))
+                .collect::<HashMap<_, _>>();
 
             let pb = indicatif::ProgressBar::new(raw_items.len() as u64);
             let mut items = pb
                 .wrap_iter(raw_items.iter())
-                .filter_map(|raw_item| raw_item.parse())
+                .filter_map(|raw_item| {
+                    Item::from_raw(
+                        raw_item,
+                        image_locations.get(raw_item.imagefile()?.as_str()).cloned(),
+                    )
+                })
                 .collect::<Vec<Item>>();
 
             pb.finish();
@@ -90,7 +103,70 @@ async fn main() -> anyhow::Result<()> {
 
             tracing::info!("parsed {}/{} items", items.len(), raw_items.len());
         }
+        Subcommand::LocateImages {} => {
+            let mut images = File::open("image-locations.bin")
+                .ok()
+                .and_then(|f| rmp_serde::from_read::<_, Vec<ImageLocation>>(f).ok())
+                .unwrap_or_default();
+
+            let mut items = parse_raw_items()?;
+
+            let contained_names = images
+                .iter()
+                .map(|i| dbg!(i.name.as_str()))
+                .collect::<HashSet<_>>();
+
+            items.retain(|item| {
+                if let Some(imagefile) = item.imagefile() {
+                    !contained_names.contains(imagefile.as_str())
+                } else {
+                    false
+                }
+            });
+
+            for chunk in items.chunks(50) {
+                tracing::info!("{chunk:#?}");
+
+                images.append(
+                    &mut download::images(chunk.iter().filter_map(|i| i.imagefile()).collect())
+                        .await?,
+                );
+
+                tracing::info!("{images:#?}");
+            }
+
+            images.sort_by_key(|i| i.name.clone());
+
+            let out = rmp_serde::to_vec(&images)?;
+            std::fs::write("image-locations.bin", out)?;
+
+            tracing::info!("now have {} images", images.len());
+        }
     }
 
     Ok(())
+}
+
+fn parse_raw_items() -> anyhow::Result<Vec<RawItem>> {
+    let reader = File::open("raw-items.bin")?;
+    let len = reader.metadata()?.len();
+    let pb = indicatif::ProgressBar::new(len);
+    let reader = pb.wrap_read(reader);
+
+    let raw_items = rmp_serde::from_read::<_, Vec<RawItem>>(reader)?;
+    pb.finish();
+
+    Ok(raw_items)
+}
+
+fn parse_image_locations() -> anyhow::Result<Vec<ImageLocation>> {
+    let reader = File::open("image-locations.bin")?;
+    let len = reader.metadata()?.len();
+    let pb = indicatif::ProgressBar::new(len);
+    let reader = pb.wrap_read(reader);
+
+    let image_locations = rmp_serde::from_read::<_, Vec<ImageLocation>>(reader)?;
+    pb.finish();
+
+    Ok(image_locations)
 }

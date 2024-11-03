@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::ImageLocation;
+
 use super::{
     raw::RawItem,
     types::{DamageType, ItemType, Rarity},
@@ -11,6 +13,7 @@ use super::{
 pub struct Item {
     pub item_id: i32,
     pub name: String,
+    pub image_location: Option<ImageLocation>,
     pub types: Vec<ItemType>,
     pub damage: Option<i32>,
     pub damage_type: Option<DamageType>,
@@ -22,10 +25,11 @@ pub struct Item {
 }
 
 impl Item {
-    pub fn from_raw(item: &RawItem) -> Option<Self> {
+    pub fn from_raw(item: &RawItem, image_location: Option<ImageLocation>) -> Option<Self> {
         Some(Self {
             item_id: item.itemid()?,
             name: item.name().to_owned(),
+            image_location,
             types: item.r#type(),
             damage: parse_opt_leading_number(&item.damage()),
             damage_type: item

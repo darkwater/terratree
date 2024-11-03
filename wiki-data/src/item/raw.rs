@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
+use scraper::Html;
 use serde::{Deserialize, Serialize};
 
-use super::{item::Item, types::ItemType};
+use super::types::ItemType;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RawItem {
@@ -72,21 +73,30 @@ impl RawItem {
             .collect()
     }
 
-    pub fn parse(&self) -> Option<Item> {
-        Item::from_raw(self)
+    pub fn name(&self) -> String {
+        Html::parse_fragment(&self.name)
+            .root_element()
+            .text()
+            .collect()
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    // pub fn name(&self) -> &str {
+    //     &self.name
+    // }
 
     pub fn internalname(&self) -> &str {
         &self.internalname
     }
 
-    pub fn imagefile(&self) -> Option<&str> {
-        self.imagefile.as_deref()
+    pub fn imagefile(&self) -> Option<String> {
+        self.imagefile
+            .as_ref()
+            .map(|s| Html::parse_fragment(s).root_element().text().collect())
     }
+
+    // pub fn imagefile(&self) -> Option<&str> {
+    //     self.imagefile.as_deref()
+    // }
 
     fn list<T: FromStr>(field: &Option<String>) -> Vec<T> {
         field
