@@ -8,7 +8,11 @@ use tracing::{info_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt as _;
 use url::Url;
 
-use wiki_data::{image::WikiImageInfoPage, item::RawItem, ImageLocation};
+use wiki_data::{
+    image::{Image, WikiImageInfoPage},
+    item::RawItem,
+    ImageLocation,
+};
 
 #[derive(Debug, Default, Deserialize)]
 pub struct CargoQuery<T> {
@@ -165,4 +169,22 @@ pub async fn images(titles: Vec<String>) -> anyhow::Result<Vec<ImageLocation>> {
             })
         })
         .collect::<Vec<_>>())
+}
+
+#[tracing::instrument(fields(indicatif.pb_show))]
+pub async fn image(image: &ImageLocation, client: &mut surf::Client) -> anyhow::Result<Image> {
+    let data = client
+        .get(&image.url)
+        .await
+        .map_err(|e| e.into_inner())?
+        .body_bytes()
+        .await
+        .map_err(|e| e.into_inner());
+
+    Ok(Image {
+        name: image.name.clone(),
+        data: data?,
+        width: image.width,
+        height: image.height,
+    })
 }

@@ -1,6 +1,22 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Image {
+    pub name: String,
+    pub data: Vec<u8>,
+    pub width: i32,
+    pub height: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImageRef<'a> {
+    pub name: &'a str,
+    pub data: &'a [u8],
+    pub width: i32,
+    pub height: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageLocation {
     pub name: String,
     pub url: String,

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 
 use crate::tdata::{self, tree::TDataTree};
@@ -23,6 +25,9 @@ impl TemplateApp {
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         egui_extras::install_image_loaders(&cc.egui_ctx);
+
+        cc.egui_ctx
+            .add_bytes_loader(Arc::new(crate::wiki_img::Loader::new()));
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
@@ -62,7 +67,7 @@ impl eframe::App for TemplateApp {
                 for item in &milestone.items {
                     if let Some(image) = item.wiki_data.image_location.as_ref() {
                         ui.add(
-                            egui::Image::new(&image.url)
+                            egui::Image::new(format!("wiki://{}", image.name))
                                 .max_width(image.width as f32)
                                 .max_height(image.height as f32),
                         );

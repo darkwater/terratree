@@ -6,6 +6,8 @@ use std::{
 
 use clap::Parser;
 use rand::{seq::SliceRandom as _, thread_rng};
+use rmp_serde::config::BytesMode;
+use serde::Serialize as _;
 use tracing::level_filters::LevelFilter;
 use tracing_indicatif::{
     filter::{hide_indicatif_span_fields, IndicatifFilter},
@@ -16,6 +18,7 @@ use tracing_subscriber::{
 };
 
 use wiki_data::{
+    image::Image,
     item::{Item, RawItem},
     ImageLocation,
 };
@@ -40,6 +43,7 @@ enum Subcommand {
         generate_msgpack: Option<PathBuf>,
     },
     LocateImages {},
+    DownloadImages {},
 }
 
 #[async_std::main]
@@ -141,6 +145,43 @@ async fn main() -> anyhow::Result<()> {
             std::fs::write("image-locations.bin", out)?;
 
             tracing::info!("now have {} images", images.len());
+        }
+        Subcommand::DownloadImages {} => {
+            let mut out = File::open("images.bin")
+                .ok()
+                .and_then(|f| rmp_serde::from_read::<_, Vec<Image>>(f).ok())
+                .unwrap_or_default();
+
+            let mut images = parse_image_locations()?;
+
+            let downloaded = out.iter().map(|i| i.name.as_str()).collect::<HashSet<_>>();
+
+            images.retain(|i| !downloaded.contains(i.name.as_str()));
+
+            let pb = indicatif::ProgressBar::new(images.len() as u64);
+            let images = pb.wrap_iter(images.into_iter());
+
+            let mut client = surf::Client::new();
+
+            for image in images {
+                match download::image(&image, &mut client).await {
+                    Ok(image) => {
+                        out.push(image);
+                    }
+                    Err(e) => {
+                        tracing::error!("failed to download {}: {}", image.name, e);
+                        break;
+                    }
+                }
+            }
+
+            pb.finish();
+
+            let mut bytes = Vec::new();
+            let mut serializer =
+                rmp_serde::Serializer::new(&mut bytes).with_bytes(BytesMode::ForceAll);
+            out.serialize(&mut serializer)?;
+            std::fs::write("wiki-data/src/images.bin", bytes)?;
         }
     }
 

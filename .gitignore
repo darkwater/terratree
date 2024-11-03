@@ -13,4 +13,3 @@ target_wasm
 .lycheecache
 
 *.bin
-!items.bin
