@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WikiText {
-    pub text: String,
+    text: String,
 }
 
 impl WikiText {
@@ -21,6 +21,10 @@ impl WikiText {
                 })
                 .collect::<String>(),
         }
+    }
+
+    pub fn plain(&self) -> String {
+        self.text.clone()
     }
 }
 
