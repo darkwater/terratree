@@ -20,7 +20,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "terratree",
         native_options,
-        Box::new(|cc| Ok(Box::new(terratree::TemplateApp::new(cc)))),
+        Box::new(|cc| Ok(Box::new(terratree::TerratreeApp::new(cc)))),
     )
 }
 
@@ -50,7 +50,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(terratree::TemplateApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(terratree::TerratreeApp::new(cc)))),
             )
             .await;
 

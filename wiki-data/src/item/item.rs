@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 use crate::ImageLocation;
 
 use super::{
+    WikiText,
     raw::RawItem,
     types::{DamageType, ItemType, Rarity},
     utils::{parse_leading_number, parse_opt_leading_number, parse_rarity},
-    WikiText,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

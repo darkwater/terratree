@@ -14,7 +14,11 @@ use wiki_data::{
     item::RawItem,
 };
 
-const USER_AGENT: &str = "terratree-wiki-data-cli/0.1 (https://github.com/darkwater/terratree)";
+const USER_AGENT: &str = concat!(
+    "terratree-wiki-data-cli/",
+    env!("CARGO_PKG_VERSION"),
+    " (https://github.com/darkwater/terratree)",
+);
 
 #[derive(Debug, Default, Deserialize)]
 pub struct CargoQuery<T> {
