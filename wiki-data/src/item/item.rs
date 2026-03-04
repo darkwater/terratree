@@ -45,7 +45,7 @@ impl Item {
             damage: parse_opt_leading_number(&item.damage()),
             damage_type: item
                 .damagetype()
-                .map(|s| s.parse().expect("invalid damage type")),
+                .and_then(|s| s.parse().ok()),
             defense: parse_opt_leading_number(&item.defense()),
             autoswing: item.autoswing(),
             velocity: parse_opt_leading_number(&item.velocity()),
