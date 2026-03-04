@@ -16,15 +16,10 @@ pub fn parse_leading_number<T: FromStr>(s: &str) -> Result<T, T::Err> {
 pub fn parse_rarity(s: &Option<String>) -> Option<Rarity> {
     let rare = s.as_ref()?;
     rare.parse::<Rarity>()
-        .or_else(|_| {
-            parse_leading_number::<Rarity>(
-                rare.split_once("Rarity color ")
-                    .expect("Invalid rarity")
-                    .1
-                    .split_once('.')
-                    .unwrap()
-                    .0,
-            )
+        .or_else(|_| -> Result<Rarity, ()> {
+            let after = rare.split_once("Rarity color ").ok_or(())?.1;
+            let before_dot = after.split_once('.').ok_or(())?.0;
+            parse_leading_number::<Rarity>(before_dot)
         })
         .ok()
 }

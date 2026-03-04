@@ -5,22 +5,22 @@ use std::{
 };
 
 use clap::Parser;
-use rand::{seq::SliceRandom as _, thread_rng};
+use rand::prelude::IndexedRandom as _;
 use rmp_serde::config::BytesMode;
 use serde::Serialize as _;
 use tracing::level_filters::LevelFilter;
 use tracing_indicatif::{
-    filter::{hide_indicatif_span_fields, IndicatifFilter},
     IndicatifLayer,
+    filter::{IndicatifFilter, hide_indicatif_span_fields},
 };
 use tracing_subscriber::{
-    fmt::format::DefaultFields, layer::SubscriberExt as _, util::SubscriberInitExt as _, Layer,
+    Layer, fmt::format::DefaultFields, layer::SubscriberExt as _, util::SubscriberInitExt as _,
 };
 
 use wiki_data::{
+    ImageLocation,
     image::Image,
     item::{Item, RawItem},
-    ImageLocation,
 };
 
 mod download;
@@ -82,10 +82,22 @@ async fn main() -> anyhow::Result<()> {
             let mut items = pb
                 .wrap_iter(raw_items.iter())
                 .filter_map(|raw_item| {
-                    Item::from_raw(
+                    let res = Item::from_raw(
                         raw_item,
                         image_locations.get(raw_item.imagefile()?.as_str()).cloned(),
-                    )
+                    );
+
+                    if res.is_none()
+                        && let Some(item_id) = raw_item.itemid()
+                    {
+                        tracing::warn!(
+                            "failed to parse item {:?} (id {:?})",
+                            raw_item.name(),
+                            item_id,
+                        );
+                    }
+
+                    res
                 })
                 .collect::<Vec<Item>>();
 
@@ -101,7 +113,7 @@ async fn main() -> anyhow::Result<()> {
                 generate::msgpack(&items, path)?
             }
 
-            for item in items.choose_multiple(&mut thread_rng(), 10) {
+            for item in items.sample(&mut rand::rng(), 10) {
                 tracing::info!("{:#?}", item);
             }
 
@@ -147,7 +159,7 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!("now have {} images", images.len());
         }
         Subcommand::DownloadImages {} => {
-            let mut out = File::open("images.bin")
+            let mut out = File::open("wiki-data/src/images.bin")
                 .ok()
                 .and_then(|f| rmp_serde::from_read::<_, Vec<Image>>(f).ok())
                 .unwrap_or_default();
@@ -163,14 +175,29 @@ async fn main() -> anyhow::Result<()> {
 
             let mut client = surf::Client::new();
 
-            for image in images {
-                match download::image(&image, &mut client).await {
-                    Ok(image) => {
-                        out.push(image);
-                    }
-                    Err(e) => {
-                        tracing::error!("failed to download {}: {}", image.name, e);
-                        break;
+            let mut backoff = 1;
+
+            'next_image: for image in images {
+                'retry: loop {
+                    match download::image(&image, &mut client).await {
+                        Ok(image) => {
+                            out.push(image);
+                            continue 'next_image;
+                        }
+                        Err(e) => {
+                            tracing::error!("failed to download {}: {}", image.name, e);
+
+                            if e.to_string().contains("ratelimited") {
+                                tracing::info!("backing off for {backoff} seconds...");
+                                async_std::task::sleep(std::time::Duration::from_secs(backoff))
+                                    .await;
+                                backoff *= 2;
+
+                                continue 'retry;
+                            } else {
+                                continue 'next_image;
+                            }
+                        }
                     }
                 }
             }

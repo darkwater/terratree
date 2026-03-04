@@ -1,7 +1,7 @@
 [package]
 name = "wiki-data-cli"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 wiki-data = { path = "../wiki-data", default-features = false }
