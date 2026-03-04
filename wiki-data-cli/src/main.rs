@@ -5,7 +5,7 @@ use std::{
 };
 
 use clap::Parser;
-use rand::{seq::SliceRandom as _, thread_rng};
+use rand::prelude::IndexedRandom as _;
 use rmp_serde::config::BytesMode;
 use serde::Serialize as _;
 use tracing::level_filters::LevelFilter;
@@ -101,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
                 generate::msgpack(&items, path)?
             }
 
-            for item in items.choose_multiple(&mut thread_rng(), 10) {
+            for item in items.sample(&mut rand::rng(), 10) {
                 tracing::info!("{:#?}", item);
             }
 

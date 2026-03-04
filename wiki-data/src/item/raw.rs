@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::types::ItemType;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct RawItem {
     itemid: Option<String>,        // Integer
     name: String,                  // String

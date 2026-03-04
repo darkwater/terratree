@@ -17,9 +17,20 @@ pub struct Item {
     pub types: Vec<ItemType>,
     pub damage: Option<i32>,
     pub damage_type: Option<DamageType>,
+    pub defense: Option<i32>,
     pub autoswing: Option<bool>,
     pub velocity: Option<u32>,
     pub knockback: Option<f32>,
+    pub critical: Option<i32>,
+    pub usetime: Option<i32>,
+    pub mana: Option<i32>,
+    pub hheal: Option<i32>,
+    pub mheal: Option<i32>,
+    pub buy: Option<String>,
+    pub sell: Option<String>,
+    pub stack: Option<i32>,
+    pub consumable: Option<bool>,
+    pub hardmode: Option<bool>,
     pub rarity: Rarity,
     pub tooltip: Option<WikiText>,
 }
@@ -35,12 +46,23 @@ impl Item {
             damage_type: item
                 .damagetype()
                 .map(|s| s.parse().expect("invalid damage type")),
+            defense: parse_opt_leading_number(&item.defense()),
             autoswing: item.autoswing(),
             velocity: parse_opt_leading_number(&item.velocity()),
             knockback: item
                 .knockback()
                 .as_ref()
                 .and_then(|s| parse_leading_number(s).ok()),
+            critical: parse_opt_leading_number(&item.critical()),
+            usetime: parse_opt_leading_number(&item.usetime()),
+            mana: parse_opt_leading_number(&item.mana()),
+            hheal: parse_opt_leading_number(&item.hheal()),
+            mheal: parse_opt_leading_number(&item.mheal()),
+            buy: item.buy(),
+            sell: item.sell(),
+            stack: parse_opt_leading_number(&item.stack()),
+            consumable: item.consumable(),
+            hardmode: item.hardmode(),
             rarity: parse_rarity(&item.rare())?,
             tooltip: item.tooltip().map(|s| WikiText::new(&s)),
         })
