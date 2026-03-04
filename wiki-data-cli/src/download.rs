@@ -14,6 +14,8 @@ use wiki_data::{
     ImageLocation,
 };
 
+const USER_AGENT: &str = "terratree-wiki-data-cli/0.1 (https://github.com/darkwater/terratree)";
+
 #[derive(Debug, Default, Deserialize)]
 pub struct CargoQuery<T> {
     pub cargoquery: Vec<CargoQueryEntry<T>>,
@@ -45,7 +47,7 @@ pub async fn count() -> anyhow::Result<usize> {
     .unwrap();
 
     surf::get(url)
-        .header("User-Agent", "terratree-wiki-data-cli/0.1 (https://github.com/darkwater/terratree)")
+        .header("User-Agent", USER_AGENT)
         .await
         .map_err(|e| e.into_inner())?
         .body_json::<CargoQuery<Count>>()
@@ -81,7 +83,7 @@ pub async fn items(offset: usize) -> anyhow::Result<Vec<RawItem>> {
     .unwrap();
 
     Ok(surf::get(url)
-        .header("User-Agent", "terratree-wiki-data-cli/0.1 (https://github.com/darkwater/terratree)")
+        .header("User-Agent", USER_AGENT)
         .await
         .map_err(|e| e.into_inner())?
         .body_json::<CargoQuery<RawItem>>()
@@ -153,7 +155,7 @@ pub async fn images(titles: Vec<String>) -> anyhow::Result<Vec<ImageLocation>> {
     // todo!();
 
     Ok(surf::get(url)
-        .header("User-Agent", "terratree-wiki-data-cli/0.1 (https://github.com/darkwater/terratree)")
+        .header("User-Agent", USER_AGENT)
         .await
         .map_err(|e| e.into_inner())?
         .body_json::<Query>()
