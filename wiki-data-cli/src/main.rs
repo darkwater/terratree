@@ -82,10 +82,20 @@ async fn main() -> anyhow::Result<()> {
             let mut items = pb
                 .wrap_iter(raw_items.iter())
                 .filter_map(|raw_item| {
-                    Item::from_raw(
+                    let res = Item::from_raw(
                         raw_item,
                         image_locations.get(raw_item.imagefile()?.as_str()).cloned(),
-                    )
+                    );
+
+                    if res.is_none() && let Some(item_id) = raw_item.itemid() {
+                        tracing::warn!(
+                            "failed to parse item {:?} (id {:?})",
+                            raw_item.name(),
+                            item_id,
+                        );
+                    }
+
+                    res
                 })
                 .collect::<Vec<Item>>();
 

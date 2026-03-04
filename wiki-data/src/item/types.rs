@@ -28,7 +28,7 @@ impl Display for ItemType {
     }
 }
 
-#[derive(Debug, TryFrom, Serialize, Deserialize)]
+#[derive(Debug, TryFrom, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[try_from(repr)]
 #[repr(i32)]
 pub enum Rarity {
@@ -103,7 +103,7 @@ pub enum DamageType {
 }
 
 impl FromStr for DamageType {
-    type Err = ();
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -111,8 +111,8 @@ impl FromStr for DamageType {
             "ranged" => Ok(Self::Ranged),
             "summon" => Ok(Self::Summon),
             "magic" => Ok(Self::Magic),
-            "-" => Ok(Self::Other),
-            _ => Err(()),
+            "" => Ok(Self::Other),
+            other => Err(other.to_owned()),
         }
     }
 }
