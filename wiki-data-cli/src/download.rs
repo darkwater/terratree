@@ -4,14 +4,14 @@ use anyhow::Context;
 use indicatif::ProgressStyle;
 use itertools::Itertools as _;
 use serde::Deserialize;
-use tracing::{info_span, Span};
+use tracing::{Span, info_span};
 use tracing_indicatif::span_ext::IndicatifSpanExt as _;
 use url::Url;
 
 use wiki_data::{
+    ImageLocation,
     image::{Image, WikiImageInfoPage},
     item::RawItem,
-    ImageLocation,
 };
 
 const USER_AGENT: &str = "terratree-wiki-data-cli/0.1 (https://github.com/darkwater/terratree)";
@@ -184,11 +184,25 @@ pub async fn image(image: &ImageLocation, client: &mut surf::Client) -> anyhow::
         .map_err(|e| e.into_inner())?
         .body_bytes()
         .await
-        .map_err(|e| e.into_inner());
+        .map_err(|e| e.into_inner())?;
+
+    #[derive(Deserialize)]
+    struct ErrorResponse {
+        error: ErrorData,
+    }
+    #[derive(Debug, Deserialize)]
+    struct ErrorData {
+        code: String,
+        info: String,
+    }
+
+    if let Ok(err) = serde_json::from_slice::<ErrorResponse>(&data) {
+        anyhow::bail!("{}: {}", err.error.code, err.error.info);
+    }
 
     Ok(Image {
         name: image.name.clone(),
-        data: data?,
+        data,
         width: image.width,
         height: image.height,
     })

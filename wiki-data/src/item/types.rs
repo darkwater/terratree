@@ -28,7 +28,7 @@ impl Display for ItemType {
     }
 }
 
-#[derive(Debug, TryFrom, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, TryFrom, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[try_from(repr)]
 #[repr(i32)]
 pub enum Rarity {
@@ -73,6 +73,7 @@ impl Rarity {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum RarityColor {
     Static { r: u8, g: u8, b: u8 },
     Expert,
